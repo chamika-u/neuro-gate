@@ -37,10 +37,10 @@ tool is build-time documentation tooling, not the NeuroGate runtime.
 
 **Testing**: `pytest` with unit tests for discovery, normalization, deduplication,
 naming, manifest validation, and reporting; contract tests for the CLI JSON report
-and exit codes; an opt-in integration test that renders a tiny diagram with the real
-renderer. `pytest-cov` enforces >= 90% line coverage and 100% branch coverage on the
-discovery/naming/manifest-validation modules. `ruff` and `mypy --strict` are the
-quality gates.
+and exit codes; an integration test that renders a tiny diagram with the real
+renderer; and a CI benchmark job for the full export. `pytest-cov` enforces >= 90%
+line coverage and 100% branch coverage on the discovery/naming/manifest-validation
+modules. `ruff` and `mypy --strict` are the quality gates.
 
 **Target Platform**: Developer workstations and CI on Windows, Linux, or macOS
 (x86-64 or ARM64) with Node.js >= 22.13 and a headless Chromium supplied by
@@ -130,12 +130,19 @@ neuro-gate/
             └── integration/
 ```
 
+```text
+.github/
+└── workflows/
+    └── diagram-export.yml            # required lint, tests, renderer, and benchmark gates
+```
+
 **Structure Decision**: Single isolated tooling subproject under
 `neuro-gate/tools/diagram-export/`, with output at `neuro-gate/diagrams/`. The
 runtime service planned in feature `001` will own `src/neurogate/` and the root
 `pyproject.toml`; this tool keeps its own `pyproject.toml` so documentation tooling
 neither depends on nor blocks the runtime service. Diagram sources in
-`neuro-gate/docs/` are read-only inputs.
+`neuro-gate/docs/` are read-only inputs. A dedicated workflow supplies the
+constitution-required CI and benchmark evidence.
 
 ## Complexity Tracking
 
