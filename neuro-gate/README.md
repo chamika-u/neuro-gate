@@ -150,8 +150,8 @@ Milestones and the risk register live in
 | Role | Responsibility |
 |------|----------------|
 | D.M.M. C. Udayanga | architecture, SLM middleware, evaluation |
-| Member 2 | signal processing & LSL simulation |
-| Member 3 | UI, TTS output, demo production |
+| D.M.C.L. Karunarathna | signal processing & LSL simulation |
+| S.M.A.B. Samarakoon | UI, TTS output, demo production |
 
 ## Licence
 
