@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neuro-gate.local/contracts/event-stream.schema.json",
+  "title": "NeuroGateEvent",
+  "description": "Newline-delimited JSON published to the local dashboard. One object per line. Must never carry raw biosignals or rejected-noise text.",
+  "contract_version": "1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_type", "session_id", "ts_ms"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "session_started",
+        "session_stopped",
+        "state_changed",
+        "feature_summary",
+        "trigger_decision",
+        "intent_staged",
+        "confirmation_resolved",
+        "output_delivered",
+        "timing_record",
+        "fault"
+      ]
+    },
+    "session_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "ts_ms": { "type": "integer", "minimum": 0 },
+    "state": {
+      "type": "string",
+      "enum": [
+        "BOOTING",
+        "CALIBRATING",
+        "PASSIVE",
+        "TRIGGER_DETECTED",
+        "BUFFERING",
+        "SANITIZING",
+        "AWAITING_CONFIRMATION",
+        "SPEAKING",
+        "SILENT_DROP",
+        "FAULT"
+      ]
+    },
+    "previous_state": { "type": "string" },
+    "trigger_kind": { "type": "string", "enum": ["VOLITIONAL", "TRANSIENT", "NONE"] },
+    "snr_db": { "type": "number", "minimum": -20, "maximum": 60 },
+    "semg_rms": { "type": "number", "minimum": 0, "maximum": 1 },
+    "language": { "type": "string", "enum": ["si-LK", "ta-LK", "en-US", "UNKNOWN"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rejected_count": { "type": "integer", "minimum": 0, "maximum": 20 },
+    "sanitized_text": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Present only on intent_staged and output_delivered; omitted otherwise."
+    },
+    "voice_locale": {
+      "type": ["string", "null"],
+      "enum": ["si-LK", "ta-LK", "ta-IN", "en-US", "en-GB", null]
+    },
+    "channel": { "type": "string", "enum": ["SUBTITLE", "TTS"] },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVED", "TIMEOUT", "CANCELLED", "NO_RESPONSE"]
+    },
+    "dsp_ms": { "type": "integer", "minimum": 0 },
+    "fsm_ms": { "type": "integer", "minimum": 0 },
+    "sanitize_ms": { "type": "integer", "minimum": 0 },
+    "validate_ms": { "type": "integer", "minimum": 0 },
+    "fault_code": {
+      "type": "string",
+      "enum": [
+        "SCHEMA_INVALID",
+        "LOW_SNR",
+        "TIMESTAMP_DESYNC",
+        "SLM_TIMEOUT",
+        "MODEL_UNAVAILABLE",
+        "TTS_UNAVAILABLE",
+        "LANGUAGE_UNSUPPORTED",
+        "CONFIG_INVALID",
+        "CONSENT_MISSING",
+        "REPEATED_FAULT"
+      ]
+    }
+  },
+  "allOf": [
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "feature_summary" } } }, "then": { "required": ["snr_db"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "trigger_decision" } } }, "then": { "required": ["trigger_kind"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "state_changed" } } }, "then": { "required": ["state"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "intent_staged" } } }, "then": { "required": ["language", "confidence", "rejected_count"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "confirmation_resolved" } } }, "then": { "required": ["decision"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "output_delivered" } } }, "then": { "required": ["channel", "sanitized_text"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "timing_record" } } }, "then": { "required": ["dsp_ms", "fsm_ms", "sanitize_ms", "validate_ms"] } },
+    { "if": { "required": ["event_type"], "properties": { "event_type": { "const": "fault" } } }, "then": { "required": ["fault_code"] } }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neuro-gate.local/contracts/config.schema.json",
+  "title": "NeuroGateConfig",
+  "description": "Shape of TOML configuration after parsing. Loaded once at process start; immutable for the process lifetime. Contains no user content and no secrets.",
+  "contract_version": "1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "dsp", "fsm", "sanitizer", "output", "ui", "stage_timeouts_ms"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "dsp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mains_hz", "semg_band_hz", "eeg_band_hz", "rms_window_ms", "psd_epoch_s"],
+      "properties": {
+        "mains_hz": { "type": "integer", "enum": [50, 60] },
+        "semg_band_hz": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": "number" }, "prefixItems": [{ "type": "number" }, { "type": "number" }]
+        },
+        "eeg_band_hz": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": "number" }
+        },
+        "rms_window_ms": { "type": "integer", "minimum": 10, "maximum": 200 },
+        "psd_epoch_s": { "type": "number", "minimum": 0.25, "maximum": 5 }
+      }
+    },
+    "fsm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hold_floor_ms", "hold_max_ms", "buffer_max_ms", "confirmation_window_ms", "confidence_floor", "fault_budget"],
+      "properties": {
+        "hold_floor_ms": { "type": "integer", "minimum": 150, "maximum": 500 },
+        "hold_max_ms": { "type": "integer", "minimum": 500, "maximum": 2000 },
+        "buffer_max_ms": { "type": "integer", "minimum": 1000, "maximum": 5000 },
+        "confirmation_window_ms": { "type": "integer", "const": 1500 },
+        "confidence_floor": { "type": "number", "minimum": 0.5, "maximum": 0.99 },
+        "fault_budget": { "type": "integer", "minimum": 1, "maximum": 50 }
+      }
+    },
+    "sanitizer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "model", "timeout_ms", "max_retries"],
+      "properties": {
+        "backend": { "type": "string", "const": "ollama" },
+        "model": { "type": "string", "enum": ["llama3.2:3b", "phi3:mini"] },
+        "timeout_ms": { "type": "integer", "minimum": 1000, "maximum": 10000 },
+        "max_retries": { "type": "integer", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tts_backend", "subtitle_max_chars"],
+      "properties": {
+        "tts_backend": { "type": "string", "enum": ["webspeech", "espeak", "none"] },
+        "subtitle_max_chars": { "type": "integer", "minimum": 50, "maximum": 500 }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_port", "show_rejected_noise"],
+      "properties": {
+        "event_port": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+        "show_rejected_noise": { "type": "boolean" }
+      }
+    },
+    "stage_timeouts_ms": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-stage wall-clock bounds. The sanitizer bound lives in `sanitizer.timeout_ms`.",
+      "required": ["dsp_ms", "fsm_ms", "tts_ms"],
+      "properties": {
+        "dsp_ms": { "type": "integer", "minimum": 10, "maximum": 2000 },
+        "fsm_ms": { "type": "integer", "minimum": 10, "maximum": 2000 },
+        "tts_ms": { "type": "integer", "minimum": 500, "maximum": 10000 }
+      }
+    }
+  }
+}

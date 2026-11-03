@@ -1,0 +1,23 @@
+%% NeuroGate — Multilingual Routing (Sinhala / Tamil / English)
+%% Source of truth for docs/08-multilingual-support.md
+flowchart TD
+    IN["Decoded subvocal text buffer<br/>UTF-8, mixed-language"]
+    DET{"Language detection<br/>script ranges + SLM hint"}
+    SI["Sinhala path<br/>U+0D80-U+0DFF<br/>locale si-LK"]
+    TA["Tamil path<br/>U+0B80-U+0BFF<br/>locale ta-LK"]
+    EN["English path<br/>Latin script<br/>locale en-US"]
+    SLM["Shared SLM Sanitizer<br/>same JSON contract"]
+    NOISE["Noise lexicon per language<br/>fatigue / pain / filler"]
+    OUT["SanitizedIntent + voice_locale"]
+    RENDER["UTF-8 subtitle render<br/>script-appropriate font"]
+    VOICE["TTS voice selection<br/>falls back gracefully"]
+
+    IN --> DET
+    DET --> SI --> SLM
+    DET --> TA --> SLM
+    DET --> EN --> SLM
+    NOISE --> SLM
+    SLM --> OUT
+    OUT --> RENDER
+    OUT --> VOICE
+    VOICE -->|"voice missing"| FALL["Flag: subtitle-only mode<br/>never silently switches language"]

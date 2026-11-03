@@ -1,0 +1,61 @@
+%% NeuroGate — Data Contracts (Pydantic v2 models)
+%% Source of truth for docs/07-data-contracts.md
+classDiagram
+    class BiosignalFrame {
+        +str stream_id
+        +ChannelKind kind
+        +List~float~ samples
+        +float lsl_timestamp
+        +int sampling_rate_hz
+    }
+
+    class FeatureFrame {
+        +str window_id
+        +float semg_rms
+        +dict band_power
+        +float snr_db
+        +bool artifact_flagged
+    }
+
+    class TriggerEvent {
+        +str window_id
+        +TriggerKind kind
+        +float confidence
+        +float hold_ms
+    }
+
+    class ThoughtBuffer {
+        +str buffer_id
+        +str raw_text
+        +str language_hint
+        +float duration_ms
+    }
+
+    class SanitizedIntent {
+        +str detected_language
+        +bool has_actionable_intent
+        +List~str~ rejected_noise
+        +str sanitized_text
+        +float confidence
+    }
+
+    class ConfirmationDecision {
+        +str intent_id
+        +Decision outcome
+        +float elapsed_ms
+    }
+
+    class OutputEvent {
+        +str intent_id
+        +OutputChannel channel
+        +str text
+        +str voice_locale
+        +bool delivered
+    }
+
+    BiosignalFrame --> FeatureFrame : derives
+    FeatureFrame --> TriggerEvent : gate
+    TriggerEvent --> ThoughtBuffer : captures
+    ThoughtBuffer --> SanitizedIntent : sanitizes
+    SanitizedIntent --> ConfirmationDecision : human gate
+    ConfirmationDecision --> OutputEvent : emits

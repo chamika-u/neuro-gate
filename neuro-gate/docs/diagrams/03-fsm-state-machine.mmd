@@ -1,0 +1,33 @@
+%% NeuroGate — FSM Intent Gatekeeper State Machine
+%% Source of truth for docs/02-agent-decision-loop.md
+stateDiagram-v2
+    [*] --> BOOTING
+
+    BOOTING --> CALIBRATING: sensors found
+    CALIBRATING --> PASSIVE: baseline locked
+    CALIBRATING --> FAULT: SNR below floor for 10 s
+
+    PASSIVE --> TRIGGER_DETECTED: RMS envelope crosses threshold
+    TRIGGER_DETECTED --> BUFFERING: hold-time satisfied
+    TRIGGER_DETECTED --> PASSIVE: transient spike rejected
+
+    BUFFERING --> SANITIZING: buffer complete or end-of-utterance
+    BUFFERING --> SILENT_DROP: buffer overflow or silence only
+
+    SANITIZING --> AWAITING_CONFIRMATION: valid contract, confidence >= 0.75
+    SANITIZING --> SILENT_DROP: low confidence or schema failure
+    SANITIZING --> FAULT: SLM unavailable
+
+    AWAITING_CONFIRMATION --> SPEAKING: approve or 1.5 s timeout
+    AWAITING_CONFIRMATION --> SILENT_DROP: cancel gesture
+
+    SPEAKING --> PASSIVE: playback finished
+    SPEAKING --> PASSIVE: playback aborted
+    SILENT_DROP --> PASSIVE: retry prompt acknowledged
+    FAULT --> BOOTING: operator reset
+
+    note right of AWAITING_CONFIRMATION
+        Human intervention point.
+        No audio leaves the device
+        before this state resolves.
+    end note

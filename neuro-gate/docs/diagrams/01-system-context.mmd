@@ -1,0 +1,21 @@
+%% NeuroGate — System Context (C4 Level 1)
+%% Source of truth for docs/01-system-architecture.md
+flowchart LR
+    User["User<br/>speech-impaired / non-verbal"]
+    Sensor["Biosignal Sensors<br/>EEG + sEMG headband"]
+    Sim["LSL Replay Simulator<br/>PhysioNet / synthetic"]
+    NG["NeuroGate<br/>Intent-Gated Assistive Middleware"]
+    Disp["Assistive Display<br/>large-text subtitles / AAC grid"]
+    TTS["Local TTS Engine<br/>Web Speech API"]
+    Partner["Caregiver /<br/>communication partner"]
+    Operator["Clinician / Operator<br/>calibration + consent"]
+
+    User -->|"subvocal intent + affect"| Sensor
+    Sensor -->|"LSL stream<br/>EEG 8ch / sEMG 4ch"| NG
+    Sim -.->|"LSL replay<br/>no-hardware mode"| NG
+    NG -->|"sanitized text"| Disp
+    NG -->|"sanitized utterance"| TTS
+    Disp --> User
+    TTS --> Partner
+    Operator -->|"thresholds, language profile, consent"| NG
+    NG -.->|"telemetry<br/>non-durable, PII-free"| Operator

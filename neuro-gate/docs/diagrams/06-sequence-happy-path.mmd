@@ -1,0 +1,29 @@
+%% NeuroGate — Sequence: deliberate utterance, confirmed and spoken
+%% Source of truth for docs/06-user-scenarios.md
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant S as Sensor / LSL Simulator
+    participant DSP as DSP Engine
+    participant FSM as Intent Gatekeeper
+    participant SLM as Local SLM Sanitizer
+    participant G as Confirmation Gate
+    participant OUT as Display + TTS
+    actor C as Caregiver
+
+    U->>S: subvocalize "මට වතුර වීදුරුවක් දෙන්න"
+    S->>DSP: LSL frame batch
+    DSP->>DSP: filter, extract envelope + band power
+    DSP->>FSM: feature frame, SNR OK
+    FSM->>FSM: PASSIVE -> TRIGGER_DETECTED -> BUFFERING
+    FSM->>SLM: 4 s buffer + language hint
+    SLM->>SLM: strip fatigue / stray thought
+    SLM-->>FSM: JSON intent, confidence 0.91
+    FSM->>G: AWAITING_CONFIRMATION
+    G->>OUT: pre-render subtitle, start 1.5 s window
+    U->>G: no cancel gesture
+    G->>OUT: approve
+    OUT->>C: TTS "මට වතුර වීදුරුවක් දෙන්න"
+    OUT-->>U: subtitle shown
+    G->>FSM: reset baseline
+    FSM->>FSM: -> PASSIVE

@@ -1,0 +1,11 @@
+%% NeuroGate — Perceive / Decide / Act / Loop
+%% Source of truth for docs/02-agent-decision-loop.md
+flowchart LR
+    P["PERCEIVE<br/>LSL biosignals +<br/>context params"]
+    D["DECIDE<br/>DSP artifact check →<br/>FSM intent gate →<br/>SLM noise classification"]
+    A["ACT<br/>emit sanitized JSON →<br/>render subtitles →<br/>synthesize speech"]
+    L["LOOP<br/>read post-action state,<br/>update rolling baseline,<br/>re-arm gate"]
+
+    P --> D --> A --> L
+    L -->|"next window"| P
+    L -.->|"cancel gesture"| D

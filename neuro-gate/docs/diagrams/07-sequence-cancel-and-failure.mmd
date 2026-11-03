@@ -1,0 +1,37 @@
+%% NeuroGate — Sequence: cancellation, low confidence, and tool failure
+%% Source of truth for docs/06-user-scenarios.md and docs/05-safety-and-ethics.md
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant FSM as Intent Gatekeeper
+    participant SLM as Local SLM Sanitizer
+    participant G as Confirmation Gate
+    participant OUT as Display + TTS
+    participant OPS as Operator Console
+
+    rect rgb(255, 235, 235)
+    Note over U,OUT: Case A — user cancels during confirmation window
+    FSM->>SLM: buffer
+    SLM-->>FSM: intent, confidence 0.88
+    FSM->>G: AWAITING_CONFIRMATION
+    U->>G: cancel gesture within 1.5 s
+    G->>OUT: abort playback
+    G-->>U: "Cancelled" subtitle
+    FSM->>FSM: -> SILENT_DROP -> PASSIVE
+    end
+
+    rect rgb(255, 248, 225)
+    Note over FSM,OUT: Case B — confidence below floor
+    SLM-->>FSM: intent, confidence 0.41
+    FSM->>OUT: Silent Drop, "Intent unclear, please repeat"
+    FSM->>FSM: -> PASSIVE with wider gate
+    end
+
+    rect rgb(235, 245, 255)
+    Note over FSM,OPS: Case C — SLM or TTS tool failure
+    FSM->>SLM: buffer
+    SLM--xFSM: timeout / model unavailable
+    FSM->>OUT: degraded banner, text-only mode
+    FSM->>OPS: structured fault event, no payload content
+    FSM->>FSM: -> FAULT, operator reset required
+    end

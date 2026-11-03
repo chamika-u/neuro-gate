@@ -1,0 +1,28 @@
+# Environment
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local model weights and TTS caches
+models/
+*.gguf
+*.onnx
+
+# Recorded biosignal data — never commit raw signals or thought buffers
+data/raw/
+*.edf
+*.bdf
+*.xdf
+*.fif
+*.lsl
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

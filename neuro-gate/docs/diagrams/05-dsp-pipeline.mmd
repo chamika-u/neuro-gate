@@ -1,0 +1,21 @@
+%% NeuroGate — DSP and Feature Extraction Path
+%% Source of truth for docs/03-signal-processing.md
+flowchart TD
+    RAW["Raw LSL Frames<br/>EEG 8ch, sEMG 4ch, 1000 Hz"]
+    RAW --> DEMUX{"Channel type"}
+
+    DEMUX -->|"sEMG"| E1["Notch 50 Hz"]
+    E1 --> E2["Bandpass 20-250 Hz<br/>4th-order Butterworth"]
+    E2 --> E3["Rectify + RMS<br/>50 ms window"]
+    E3 --> E4["Subvocal Envelope<br/>articulation proxy"]
+
+    DEMUX -->|"EEG"| G1["Bandpass 1-45 Hz"]
+    G1 --> G2["Artifact Reject<br/>EOG / EMG threshold"]
+    G2 --> G3["Welch PSD<br/>1 s epochs"]
+    G3 --> G4["Band Power<br/>delta / theta / alpha / beta"]
+
+    E4 --> FUSE["Feature Vector"]
+    G4 --> FUSE
+    FUSE --> SNR{"SNR >= floor?"}
+    SNR -->|"yes"| OUT["Feature Frame<br/>to FSM gate"]
+    SNR -->|"no"| DROP["Discard frame<br/>increment fault counter"]
