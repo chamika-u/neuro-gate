@@ -1,7 +1,9 @@
+from pathlib import Path
+
 from diagram_export.discovery import discover, normalize
 
 
-def test_normalize_and_deduplicate(docs_tree):
+def test_normalize_and_deduplicate(docs_tree: Path) -> None:
     assert normalize(" a  \r\n") == "a"
     sources = discover(docs_tree)
     assert len(sources) == 2

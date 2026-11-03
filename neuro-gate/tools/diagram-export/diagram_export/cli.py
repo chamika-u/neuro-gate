@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
@@ -38,7 +38,7 @@ def run(args: argparse.Namespace) -> tuple[ExportReport, int]:
     sources = discover(args.docs_dir)
     canonical = [source for source in sources if source.canonical]
     names = output_names(sources)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     items: list[RenderedDiagram] = []
     temporary_root = Path(tempfile.mkdtemp(prefix="diagram-export-", dir=args.out_dir.parent))
     staged = temporary_root / "output"

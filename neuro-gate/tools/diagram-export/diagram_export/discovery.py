@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
+from typing import Literal
 
 from .models import DiagramSource
 
@@ -18,7 +19,8 @@ def normalize(content: str) -> str:
     return "\n".join(lines).strip()
 
 
-def _source(origin: str, path: str, content: str, order: int, heading: str | None = None,
+def _source(origin: Literal["standalone", "inline"], path: str, content: str, order: int,
+            heading: str | None = None,
             block_index: int | None = None) -> DiagramSource:
     normalized = normalize(content)
     digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()

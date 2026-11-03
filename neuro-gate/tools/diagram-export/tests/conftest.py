@@ -1,10 +1,12 @@
 """Shared test configuration."""
 
+from pathlib import Path
+
 import pytest
 
 
 @pytest.fixture
-def docs_tree(tmp_path):
+def docs_tree(tmp_path: Path) -> Path:
     """Create a small documentation tree for discovery tests."""
     docs = tmp_path / "docs"
     (docs / "diagrams").mkdir(parents=True)
