@@ -1,0 +1,36 @@
+name: Diagram export
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "tools/diagram-export/**"
+      - ".github/workflows/diagram-export.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "tools/diagram-export/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neuro-gate/tools/diagram-export
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+          cache: npm
+          cache-dependency-path: neuro-gate/tools/diagram-export/package-lock.json
+      - run: npm ci
+      - run: python -m pip install -e ".[dev]"
+      - run: ruff format --check .
+      - run: ruff check .
+      - run: mypy --strict .
+      - run: pytest --cov --cov-branch
+      - run: pytest -m render

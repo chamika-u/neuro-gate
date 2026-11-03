@@ -20,7 +20,7 @@ from .report import format_human, format_json
 
 def parser() -> argparse.ArgumentParser:
     """Build the CLI parser."""
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[3]
     result = argparse.ArgumentParser()
     result.add_argument("--docs-dir", type=Path, default=root / "docs")
     result.add_argument("--out-dir", type=Path, default=root / "diagrams")
@@ -62,6 +62,13 @@ def run(args: argparse.Namespace) -> tuple[ExportReport, int]:
             check_only=args.check, total_discovered=len(sources), total_unique=len(canonical),
             exported=len(canonical) - failed, skipped=len(sources) - len(canonical), failed=failed,
             diagrams=items, success=failed == 0)
+        if failed == 0 and args.check:
+            current = load(args.out_dir / "manifest.json")
+            report.success = current is not None and current.scale == args.scale and {
+                entry.output_name for entry in current.entries
+            } == {item.output_name for item in items}
+            if not report.success:
+                return report, 1
         if failed == 0 and not args.check:
             manifest = Manifest(tool_version=__version__, generated_at=now, scale=args.scale,
                 entries=[ManifestEntry(output_name=item.output_name,
