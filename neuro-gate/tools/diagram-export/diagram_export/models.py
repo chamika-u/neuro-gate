@@ -1,8 +1,28 @@
 """Validated models for discovery, rendering, reports, and manifests."""
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class ExportConfig(BaseModel):
+    """Validated CLI configuration at the application boundary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    docs_dir: Path
+    out_dir: Path
+    scale: int = Field(default=2, ge=2)
+    check: bool = False
+    json_output: bool = False
+    timeout: int = Field(default=30, gt=0)
+
+    @model_validator(mode="after")
+    def validate_distinct_directories(self) -> "ExportConfig":
+        if self.docs_dir.resolve() == self.out_dir.resolve():
+            raise ValueError("docs and output directories must be different")
+        return self
 
 
 class DiagramSource(BaseModel):

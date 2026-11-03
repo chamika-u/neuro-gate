@@ -238,3 +238,19 @@ Task: "Wire flow in cli.py"
 - Do not proceed past a checkpoint until its independent test passes.
 - Keep `neuro-gate/docs/` read-only throughout.
 - Commit after each logical group; the final commit must include the generated PNGs and manifest.
+
+## Phase 7: Convergence
+
+- [X] T055 Add Pydantic-validated CLI configuration and error/report boundary models so raw argparse values and unvalidated error payloads do not cross module boundaries per Constitution II (Constitution II, contradicts)
+- [ ] T056 Generate and commit `neuro-gate/tools/diagram-export/package-lock.json`, then verify reproducible installation with `npm ci` and a pinned Mermaid CLI smoke check per T003 (T003, missing)
+- [ ] T057 Add the missing foundational tests for model invariants, report/manifest JSON schemas, error exit-code mapping, CLI argument validation, and human/JSON report formatting per T010, T012, T014, T016, and T018 (T010/T012/T014/T016/T018, missing)
+- [ ] T058 Add standalone discovery, naming, renderer-wrapper, and CLI-flow tests required by T020, T022, T024, T026A, and T027, including timeout, collision, staging, and exit-code boundaries (T020/T022/T024/T026A/T027, missing)
+- [ ] T059 Add the real-render integration test and non-ASCII rendering fixture/assertion, then run them with the pinned renderer per T028 and T036 (T028/T036, missing)
+- [ ] T060 Implement directory-swap rollback and preservation tests covering swap failure, renderer failure, invalid PNG output, and unchanged prior artifacts per FR-010 and T040/T041/T044 (FR-010, partial)
+- [X] T061 Expand `--check` freshness validation to verify manifest hashes, PNG signatures, dimensions, sizes, expected entries, and no-write behavior per FR-015 and SC-004 (FR-015/SC-004, partial)
+- [ ] T062 Run the completed exporter against `neuro-gate/docs/`, generate the complete PNG set and manifest, and validate every unique discovered diagram and source traceability per FR-003, FR-005, SC-001, and T029/T037 (FR-003/FR-005/SC-001, missing)
+- [ ] T063 Add and execute the invalid-syntax atomicity integration scenario plus US3 validation scenarios for rerun, edit refresh, failure preservation, and `--check` per T044 and T046 (T044/T046, missing)
+- [ ] T064 Run coverage with branch measurement and close the required >=90% overall and 100% boundary-module branch thresholds per T050 and Constitution IV (T050/Constitution IV, missing)
+- [ ] T065 Add the CI performance benchmark job with environment/count reporting, a two-minute limit, and the constitution-required 20% regression gate per SC-003, plan: performance goals, and Constitution V (SC-003/Constitution V, missing)
+- [ ] T066 Verify generated PNGs and `manifest.json` are version-control trackable, confirm docs sources remain unchanged, and complete final artifact validation per FR-014, FR-016, T052, T053, and T054 (FR-014/FR-016, missing)
+

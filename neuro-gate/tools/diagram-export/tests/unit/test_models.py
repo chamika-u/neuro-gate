@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from diagram_export.models import Manifest, ManifestEntry, RenderedDiagram
+from diagram_export.models import ExportConfig, Manifest, ManifestEntry, RenderedDiagram
 
 
 def test_rendered_diagram_requires_scale_and_error_for_failure() -> None:
@@ -14,3 +16,8 @@ def test_manifest_rejects_duplicate_names() -> None:
                           content_hash="a" * 64, width_px=1, height_px=1, size_bytes=1)
     with pytest.raises(ValidationError):
         Manifest(tool_version="1", generated_at="now", scale=2, entries=[entry, entry])
+
+
+def test_export_config_rejects_same_directories(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError):
+        ExportConfig(docs_dir=tmp_path, out_dir=tmp_path)

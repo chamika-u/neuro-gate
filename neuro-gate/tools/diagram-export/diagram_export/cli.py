@@ -11,8 +11,8 @@ from pathlib import Path
 from . import __version__
 from .discovery import discover
 from .errors import ConfigurationError, RenderError, exit_code
-from .manifest import load, write
-from .models import ExportReport, Manifest, ManifestEntry, RenderedDiagram
+from .manifest import is_current, load, write
+from .models import ExportConfig, ExportReport, Manifest, ManifestEntry, RenderedDiagram
 from .naming import output_names
 from .render import render
 from .report import format_human, format_json
@@ -33,44 +33,51 @@ def parser() -> argparse.ArgumentParser:
 
 def run(args: argparse.Namespace) -> tuple[ExportReport, int]:
     """Execute discovery, rendering, publication, and reporting."""
-    if args.scale < 2 or args.timeout <= 0:
-        raise ConfigurationError("scale must be >= 2 and timeout must be > 0")
-    sources = discover(args.docs_dir)
+    config = ExportConfig(
+        docs_dir=args.docs_dir, out_dir=args.out_dir, scale=args.scale,
+        check=args.check, json_output=args.json, timeout=args.timeout,
+    )
+    sources = discover(config.docs_dir)
     canonical = [source for source in sources if source.canonical]
     names = output_names(sources)
     now = datetime.now(UTC).isoformat()
     items: list[RenderedDiagram] = []
-    temporary_root = Path(tempfile.mkdtemp(prefix="diagram-export-", dir=args.out_dir.parent))
+    temporary_root = Path(tempfile.mkdtemp(prefix="diagram-export-", dir=config.out_dir.parent))
     staged = temporary_root / "output"
     staged.mkdir()
     try:
         for source in canonical:
             destination = staged / names[source.source_id]
             try:
-                width, height, size = render(source.content, destination, args.scale, args.timeout,
+                width, height, size = render(source.content, destination, config.scale, config.timeout,
                                              Path(__file__).resolve().parents[1])
                 items.append(RenderedDiagram(source_id=source.source_id,
-                    output_name=destination.name, status="rendered", scale=args.scale,
+                    output_name=destination.name, status="rendered", scale=config.scale,
                     width_px=width, height_px=height, size_bytes=size))
             except RenderError as exc:
                 items.append(RenderedDiagram(source_id=source.source_id,
-                    output_name=names[source.source_id], status="failed", scale=args.scale,
+                    output_name=names[source.source_id], status="failed", scale=config.scale,
                     error=str(exc)))
         failed = sum(item.status == "failed" for item in items)
         report = ExportReport(tool_version=__version__, generated_at=now,
-            docs_dir=args.docs_dir.as_posix(), out_dir=args.out_dir.as_posix(), scale=args.scale,
-            check_only=args.check, total_discovered=len(sources), total_unique=len(canonical),
+            docs_dir=config.docs_dir.as_posix(), out_dir=config.out_dir.as_posix(), scale=config.scale,
+            check_only=config.check, total_discovered=len(sources), total_unique=len(canonical),
             exported=len(canonical) - failed, skipped=len(sources) - len(canonical), failed=failed,
             diagrams=items, success=failed == 0)
-        if failed == 0 and args.check:
-            current = load(args.out_dir / "manifest.json")
-            report.success = current is not None and current.scale == args.scale and {
-                entry.output_name for entry in current.entries
-            } == {item.output_name for item in items}
+        if failed == 0 and config.check:
+            current = load(config.out_dir / "manifest.json")
+            expected = Manifest(tool_version=__version__, generated_at=current.generated_at if current else now,
+                scale=config.scale, entries=[ManifestEntry(output_name=item.output_name,
+                    source_path=next(s.path for s in canonical if names[s.source_id] == item.output_name),
+                    origin=next(s.origin for s in canonical if names[s.source_id] == item.output_name),
+                    content_hash=item.source_id, width_px=item.width_px or 1,
+                    height_px=item.height_px or 1, size_bytes=item.size_bytes or 1)
+                    for item in items])
+            report.success = is_current(current, config.out_dir, expected)
             if not report.success:
                 return report, 1
-        if failed == 0 and not args.check:
-            manifest = Manifest(tool_version=__version__, generated_at=now, scale=args.scale,
+        if failed == 0 and not config.check:
+            manifest = Manifest(tool_version=__version__, generated_at=now, scale=config.scale,
                 entries=[ManifestEntry(output_name=item.output_name,
                     source_path=next(s.path for s in canonical if names[s.source_id] == item.output_name),
                     origin=next(s.origin for s in canonical if names[s.source_id] == item.output_name),
@@ -79,12 +86,19 @@ def run(args: argparse.Namespace) -> tuple[ExportReport, int]:
                     for item in items])
             staged_manifest = staged / "manifest.json"
             write(staged_manifest, manifest)
-            backup = args.out_dir.with_name(args.out_dir.name + ".backup")
+            backup = config.out_dir.with_name(config.out_dir.name + ".backup")
             if backup.exists():
                 shutil.rmtree(backup)
-            if args.out_dir.exists():
-                args.out_dir.replace(backup)
-            staged.replace(args.out_dir)
+            try:
+                if config.out_dir.exists():
+                    config.out_dir.replace(backup)
+                staged.replace(config.out_dir)
+            except OSError:
+                if config.out_dir.exists():
+                    shutil.rmtree(config.out_dir)
+                if backup.exists():
+                    backup.replace(config.out_dir)
+                raise
             if backup.exists():
                 shutil.rmtree(backup)
         return report, exit_code(None if report.success else RenderError("render failure"))
