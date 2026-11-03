@@ -8,15 +8,18 @@
 
 Add a repeatable, offline documentation tool that discovers every Mermaid diagram in
 `neuro-gate/docs/` (standalone `.mmd` sources and fenced `mermaid` blocks inside
-Markdown), renders each unique diagram to a 2x-scale PNG, and writes the committed
-image set plus a manifest to `neuro-gate/diagrams/`.
+Markdown), renders each unique normalized definition to a 2x-scale PNG, and writes
+the committed image set plus a manifest to `neuro-gate/diagrams/`. Counts are
+discovery-derived rather than hard-coded because the current repository contains
+10 standalone files and 12 inline blocks whose normalized contents are distinct.
 
 The tool is a small, strictly typed Python CLI (Python 3.11+, Pydantic v2 for the
 outbound report and manifest) that drives the pinned `@mermaid-js/mermaid-cli`
-renderer under Node.js. Rendering is staged in a temporary directory and published
-only after every diagram succeeds, so a broken diagram can never corrupt an
-already-valid image set. Identical diagram content is deduplicated by content hash,
-and standalone `.mmd` sources win over inline copies.
+renderer under Node.js. Rendering is staged in a temporary directory, validated,
+and published through a directory swap only after every diagram succeeds, so a
+broken diagram can never corrupt an already-valid image set. Identical normalized
+diagram content is deduplicated by content hash, and standalone `.mmd` sources win
+over inline copies only when their hashes match.
 
 ## Technical Context
 
@@ -25,7 +28,7 @@ and standalone `.mmd` sources win over inline copies.
 
 **Primary Dependencies**: Python standard library plus `pydantic` v2 (report and
 manifest contracts); dev-only `pytest`, `pytest-cov`, `ruff`, `mypy`; build-time
-`@mermaid-js/mermaid-cli@12.2.0` and `puppeteer@25.x` pinned in
+`@mermaid-js/mermaid-cli@12.2.0` and `puppeteer@25.16.0` pinned in
 `tools/diagram-export/package.json`
 
 **Storage**: Files only. Output PNGs and `manifest.json` are written to
@@ -46,17 +49,18 @@ Puppeteer.
 **Project Type**: Developer/documentation CLI tooling (single subproject), kept
 isolated from the runtime service planned in `001-neuro-gate-assistive-middleware`.
 
-**Performance Goals**: Full export of the current 11 unique diagrams completes in
-under 2 minutes (SC-003); each diagram render has a 30 s timeout and a clear failure
-report.
+**Performance Goals**: Full export of the discovery-derived current set completes
+in under 2 minutes (SC-003); each diagram render has a 30 s timeout and a clear
+failure report. A CI benchmark records the diagram count, environment, and elapsed
+time and fails on budget breach or a regression beyond 20%.
 
 **Constraints**: Offline (no hosted rendering service); deterministic and idempotent
 output; no partial/corrupt PNGs on failure; non-ASCII labels preserved; 2x render
 scale; PNG only; generated PNGs are committed.
 
-**Scale/Scope**: Currently 10 standalone `.mmd` files plus 1 inline-only diagram
-(11 unique images). Designed to scale to tens of diagrams without configuration
-changes.
+**Scale/Scope**: The current repository has 10 standalone `.mmd` files and 12
+inline Mermaid blocks; the exporter derives the unique count from normalized
+content and is designed to scale to tens of diagrams without configuration changes.
 
 ## Constitution Check
 
@@ -66,10 +70,10 @@ changes.
 |-----------|-------------|--------|------------------|
 | I. Stateless by Design (NON-NEGOTIABLE) | No external DB or durable business-data store; request-scoped processing | **PASS (scoped)** | This is a build-time documentation tool, not the NeuroGate runtime. It writes only the static PNG/manifest artifacts the feature explicitly requires. No business data, sessions, or runtime state. |
 | II. Pydantic-Validated Data Contracts | Boundary payloads validated with Pydantic v2 with explicit schemas | **PASS** | CLI `--json` report and `manifest.json` are outbound payloads modeled as Pydantic v2 models; manifest is validated on read. JSON Schemas are published under `contracts/`. |
-| III. Code Quality & Maintainability | Typed public API, `ruff`/format clean, `mypy` clean, docstrings, no dead code | **PASS** | `ruff format` + `ruff check` + `mypy --strict` on `tools/diagram-export`; all public functions documented. |
+| III. Code Quality & Maintainability | Typed public API, `ruff`/format clean, `mypy` clean, docstrings, no dead code, pinned dependencies | **PASS** | `ruff format` + `ruff check` + `mypy --strict` on `tools/diagram-export`; exact npm versions and a committed lockfile; all public functions documented. |
 | IV. Test-First with Mandatory Edge-Case Coverage (NON-NEGOTIABLE) | Tests precede implementation; >= 90% line coverage; 100% branch on validation/boundary modules | **PASS** | Red-first tasks per behavior; discovery/naming/manifest modules enumerated as boundary surfaces with 100% branch coverage. |
-| V. UX Consistency & Performance | Stable output/error schema, actionable errors, performance budget | **PASS** | One stable human report and one `--json` report schema; exit codes are documented; the < 2 min budget in SC-003 is verified by the integration test. |
-| Additional constraints | Python 3.11+, Pydantic v2 only, no external DB, secrets from env, no secret logging, portability | **PASS (justified deviation)** | Python 3.11+ and Pydantic v2 are used. Node.js is a build-time-only dependency of the renderer, not of the product runtime; justified in Complexity Tracking. No secrets are required. |
+| V. UX Consistency & Performance | Stable output/error schema, actionable errors, performance budget and benchmark evidence | **PASS** | One stable human report and one `--json` report schema; exit codes are documented; CI records the full-export benchmark and enforces the 2-minute budget plus the constitution's 20% regression rule. |
+| Additional constraints | Python 3.11+, Pydantic v2 only, no external DB, secrets from env, no secret logging, portability | **PASS (justified deviation)** | Python 3.11+ and Pydantic v2 are used. Node.js is a build-time-only dependency of the renderer, not of the product runtime; exact versions and the lockfile make it reproducible. No secrets are required. |
 
 **Gate result**: PASS. The only deviation is the build-time Node.js dependency,
 which is justified below and does not affect the product runtime.
@@ -148,9 +152,9 @@ neither depends on nor blocks the runtime service. Diagram sources in
 |-----------|--------|----------------------|
 | I. Stateless by Design | PASS (scoped) | The design writes only the requested static PNG/manifest artifacts; no database, sessions, or runtime state. Documented in [data-model.md](./data-model.md) and [research.md](./research.md). |
 | II. Pydantic-Validated Data Contracts | PASS | `ExportReport` and `Manifest` are Pydantic v2 models with published JSON Schemas in [contracts/](./contracts/); the manifest is validated on read. |
-| III. Code Quality & Maintainability | PASS | Module boundaries (`discovery`, `naming`, `render`, `manifest`, `cli`) are single-purpose with typed, documented interfaces; `mypy --strict` scope is fixed. |
-| IV. Test-First with Mandatory Edge-Case Coverage | PASS | [quickstart.md](./quickstart.md) enumerates red-first validation scenarios V1–V11 and fixes the coverage gates. Boundary modules (discovery/naming/manifest) are fully enumerable. |
-| V. UX Consistency & Performance | PASS | [contracts/cli.md](./contracts/cli.md) fixes report format, `--json` schema, and exit codes; the SC-003 budget is measured in the performance check. |
-| Additional constraints | PASS (justified deviation) | Python 3.11+ / Pydantic v2 / no DB / no secrets. The Node.js renderer remains build-time only, justified above. |
+| III. Code Quality & Maintainability | PASS | Module boundaries (`discovery`, `naming`, `render`, `manifest`, `cli`) are single-purpose with typed, documented interfaces; exact npm versions and lockfile are required. |
+| IV. Test-First with Mandatory Edge-Case Coverage | PASS | The design requires red-first tests for every behavior, including publication rollback and check mode; boundary modules are fully enumerable. |
+| V. UX Consistency & Performance | PASS | [contracts/cli.md](./contracts/cli.md) fixes report format, `--json` schema, and exit codes; CI measures the SC-003 budget and enforces the 20% regression rule. |
+| Additional constraints | PASS (justified deviation) | Python 3.11+ / Pydantic v2 / no DB / no secrets. The Node.js renderer remains build-time only, exact-pinned, and lockfile-backed. |
 
 **Gate result after design**: PASS. No unresolved violations.
