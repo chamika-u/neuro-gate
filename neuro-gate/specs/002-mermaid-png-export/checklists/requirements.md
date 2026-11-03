@@ -32,5 +32,6 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
-- Scope confirmed during discovery: 10 standalone `.mmd` sources plus 1 inline-only
-  diagram, with duplicate inline copies deduplicated (11 unique images expected).
+- Scope confirmed during discovery: all standalone `.mmd` sources and inline
+  Mermaid blocks under `neuro-gate/docs/`; counts are derived from normalized
+  content and identical definitions are deduplicated.

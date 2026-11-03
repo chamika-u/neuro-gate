@@ -31,7 +31,7 @@ Sources (read-only): `neuro-gate/docs/`
 
 - [ ] T001 Create the tool directory tree under `neuro-gate/tools/diagram-export/`: `diagram_export/`, `tests/unit/`, `tests/contract/`, `tests/integration/`, `tests/fixtures/docs/`
 - [ ] T002 Create `neuro-gate/tools/diagram-export/pyproject.toml` with Python 3.11+ metadata, `pydantic>=2,<3`, dev extras (`pytest`, `pytest-cov`, `ruff`, `mypy`), and ruff/mypy/pytest/coverage configuration
-- [ ] T003 [P] Create `neuro-gate/tools/diagram-export/package.json` pinning `@mermaid-js/mermaid-cli@12.2.0` and `puppeteer@25.x` with an `npm ci` workflow
+- [ ] T003 [P] Create `neuro-gate/tools/diagram-export/package.json` pinning `@mermaid-js/mermaid-cli@12.2.0` and `puppeteer@25.16.0`, commit the lockfile, and verify with `npm ci`
 - [ ] T004 [P] Create `neuro-gate/tools/diagram-export/puppeteer-config.json` with headless Chromium `--no-sandbox` arguments and document `PUPPETEER_EXECUTABLE_PATH` support
 - [ ] T005 [P] Create `neuro-gate/tools/diagram-export/mermaid-fonts.css` with Noto Sans Sinhala/Tamil fallback fonts for `--cssFile`
 - [ ] T006 [P] Create `neuro-gate/tools/diagram-export/.gitignore` covering `node_modules/`, `.venv/`, and coverage artifacts while leaving generated PNGs trackable
@@ -69,8 +69,8 @@ Sources (read-only): `neuro-gate/docs/`
 **Goal**: Discover every standalone `.mmd` source, render it at 2x scale, and publish
 the PNG set to `neuro-gate/diagrams/`.
 
-**Independent Test**: Run the export against the current docs and confirm ten PNGs
-exist for the ten `.mmd` sources, each traceable by name.
+**Independent Test**: Run the export against the current docs and confirm every
+standalone `.mmd` source is represented by a traceable PNG.
 
 ### Tests for User Story 1 ⚠️
 
@@ -96,9 +96,9 @@ exist for the ten `.mmd` sources, each traceable by name.
 **Goal**: Discover inline fenced Mermaid blocks, deduplicate identical content, and
 render the inline-only diagram so the image set is complete.
 
-**Independent Test**: Run discovery and confirm 12 definitions collapse to 11 unique
-diagrams, `05-failure-handling.png` exists, and the duplicated cancel/failure
-sequence is rendered once.
+**Independent Test**: Run discovery and confirm the report's measured definition
+and unique counts, verify inline-only diagrams are rendered, and verify identical
+content is rendered once.
 
 ### Tests for User Story 2 ⚠️
 
@@ -109,7 +109,7 @@ sequence is rendered once.
 - [ ] T034 [US2] Implement inline-only heading-slug naming (for example `05-failure-handling.png`) in `neuro-gate/tools/diagram-export/diagram_export/naming.py`
 - [ ] T035 [US2] Extend report and CLI flow to count skipped duplicates and show inline origins in `neuro-gate/tools/diagram-export/diagram_export/report.py` and `neuro-gate/tools/diagram-export/diagram_export/cli.py`
 - [ ] T036 [P] [US2] Add a non-ASCII fixture and rendering assertion in `neuro-gate/tools/diagram-export/tests/fixtures/docs/` and `neuro-gate/tools/diagram-export/tests/integration/test_non_ascii.py`
-- [ ] T037 [US2] Validate US2: confirm `discovered: 12`, `unique: 11`, `skipped: 1`, and the inline-only PNG in `neuro-gate/diagrams/`
+- [ ] T037 [US2] Validate US2: confirm discovery-derived counts, inline-only PNGs, and duplicate hashes are represented once in `neuro-gate/diagrams/`
 
 **Checkpoint**: US1 and US2 both work independently.
 
@@ -128,11 +128,12 @@ run `--check`; the output set stays consistent and failures leave prior PNGs int
 - [ ] T038 [P] [US3] Write failing tests for manifest load/validate/write and orphan reconciliation in `neuro-gate/tools/diagram-export/tests/unit/test_manifest.py`
 - [ ] T039 [US3] Implement manifest read/validate/write and stale-entry reconciliation in `neuro-gate/tools/diagram-export/diagram_export/manifest.py`
 - [ ] T040 [P] [US3] Write failing tests for atomic publish and no-write-on-failure in `neuro-gate/tools/diagram-export/tests/unit/test_publish.py`
-- [ ] T041 [US3] Implement two-phase staging and atomic publish in `neuro-gate/tools/diagram-export/diagram_export/cli.py`
-- [ ] T042 [US3] Implement the `--check` freshness mode without writes in `neuro-gate/tools/diagram-export/diagram_export/cli.py`
-- [ ] T043 [US3] Write the integration test for invalid syntax → exit `1` with unchanged outputs in `neuro-gate/tools/diagram-export/tests/integration/test_failure_atomic.py`
-- [ ] T044 [US3] Implement removal of previously generated PNGs that are no longer expected in `neuro-gate/tools/diagram-export/diagram_export/manifest.py`
-- [ ] T045 [US3] Validate US3 scenarios V5–V8 (idempotent rerun, edit refresh, failure atomicity, `--check`) against `neuro-gate/docs/` and `neuro-gate/diagrams/`, using `neuro-gate/tools/diagram-export/tests/integration/test_failure_atomic.py`
+- [ ] T041 [US3] Implement two-phase staging and directory-swap publication with rollback in `neuro-gate/tools/diagram-export/diagram_export/cli.py`
+- [ ] T042 [P] [US3] Write failing tests for `--check` freshness mode and no-write guarantees in `neuro-gate/tools/diagram-export/tests/contract/test_check_mode.py`
+- [ ] T043 [US3] Implement the `--check` freshness mode without writes in `neuro-gate/tools/diagram-export/diagram_export/cli.py`
+- [ ] T044 [US3] Write the integration test for invalid syntax → exit `1` with unchanged outputs in `neuro-gate/tools/diagram-export/tests/integration/test_failure_atomic.py`
+- [ ] T045 [US3] Implement removal of previously generated PNGs that are no longer expected in `neuro-gate/tools/diagram-export/diagram_export/manifest.py`
+- [ ] T046 [US3] Validate US3 scenarios V5–V8 (idempotent rerun, edit refresh, failure atomicity, `--check`) against `neuro-gate/docs/` and `neuro-gate/diagrams/`, using `neuro-gate/tools/diagram-export/tests/integration/test_failure_atomic.py`
 
 **Checkpoint**: All three user stories are independently functional.
 
@@ -142,13 +143,14 @@ run `--check`; the output set stays consistent and failures leave prior PNGs int
 
 **Purpose**: Documentation, quality gates, and end-to-end validation
 
-- [ ] T046 [P] Write `neuro-gate/tools/diagram-export/README.md` with setup, run, and troubleshooting steps
-- [ ] T047 [P] Verify `neuro-gate/tools/diagram-export/.gitignore` keeps generated PNGs and `manifest.json` trackable; check with `git status`
-- [ ] T048 Run `ruff format --check`, `ruff check`, and `mypy --strict` on `neuro-gate/tools/diagram-export/` and fix all findings
-- [ ] T049 Run `pytest --cov --cov-branch` in `neuro-gate/tools/diagram-export/` and close gaps to >= 90% line coverage and 100% branch coverage on discovery, naming, and manifest modules in `neuro-gate/tools/diagram-export/diagram_export/`
-- [ ] T050 Execute quickstart validation scenarios V1–V11 from `neuro-gate/specs/002-mermaid-png-export/quickstart.md` against `neuro-gate/diagrams/` and fix any failures
-- [ ] T051 Measure a full export wall-clock time against `neuro-gate/diagrams/` and confirm it is under two minutes (SC-003)
-- [ ] T052 Final check: confirm no files under `neuro-gate/docs/` were modified, then commit the PNGs and `manifest.json` in `neuro-gate/diagrams/`
+- [ ] T047 [P] Write `neuro-gate/tools/diagram-export/README.md` with setup, run, and troubleshooting steps
+- [ ] T048 [P] Verify `neuro-gate/tools/diagram-export/.gitignore` keeps generated PNGs and `manifest.json` trackable; check with `git status`
+- [ ] T049 Run `ruff format --check`, `ruff check`, and `mypy --strict` on `neuro-gate/tools/diagram-export/` and fix all findings
+- [ ] T050 Run `pytest --cov --cov-branch` in `neuro-gate/tools/diagram-export/` and close gaps to >= 90% line coverage and 100% branch coverage on discovery, naming, and manifest modules in `neuro-gate/tools/diagram-export/diagram_export/`
+- [ ] T051 Add `.github/workflows/diagram-export.yml` to run `npm ci`, Python tests, lint, formatting, strict typing, and the renderer integration job with committed lockfile verification
+- [ ] T052 Execute quickstart validation scenarios V1–V11 from `neuro-gate/specs/002-mermaid-png-export/quickstart.md` against `neuro-gate/diagrams/` and fix any failures
+- [ ] T053 Measure a full export wall-clock time against `neuro-gate/diagrams/`, record environment and diagram count, and fail above two minutes or beyond the approved 20% regression threshold
+- [ ] T054 Final check: confirm no files under `neuro-gate/docs/` were modified, then commit the PNGs and `manifest.json` in `neuro-gate/diagrams/`
 
 ---
 
