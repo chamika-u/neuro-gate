@@ -37,6 +37,9 @@ Represents one discovered Mermaid definition before rendering.
   `canonical = True`.
 - Canonical precedence: `standalone` beats `inline`; otherwise the lowest
   `discovery_order` wins.
+- `total_discovered` counts every standalone file and every inline block before
+  deduplication. `total_unique` counts distinct normalized content hashes, and
+  `skipped = total_discovered - total_unique`.
 
 ### 2. `RenderedDiagram`
 
@@ -69,8 +72,9 @@ canonical  -> staged   -> published
 canonical  -> staged   -> failed
 ```
 
-A failed render aborts publication: `staged` files are discarded and the previously
-published set is unchanged.
+A failed render aborts publication: staged files are discarded and the previously
+published set is unchanged. Publication is a directory swap with rollback, not a
+file-by-file overwrite, so interruption cannot leave a mixed generated set.
 
 ### 3. `ExportReport`
 
@@ -150,3 +154,8 @@ Manifest (one) ────────entries──────> ManifestEntry 
   configuration error (`2`), not a render failure (`1`).
 - Idempotence: re-running with unchanged sources produces byte-comparable PNGs and a
   manifest whose only volatile field is `generated_at`.
+- A scale-validation integration check renders the same fixture at scale 1 and
+  scale 2 and verifies that both dimensions are doubled within the renderer's
+  documented pixel-rounding tolerance. The manifest's `scale`, `width_px`, and
+  `height_px` record the published result; the ratio check is test evidence rather
+  than an inferred guarantee from the scale field alone.

@@ -8,7 +8,7 @@ the choice, the rationale, and the alternatives considered.
 ## 1. Renderer selection
 
 - **Decision**: Use the official `@mermaid-js/mermaid-cli` (`mmdc`) at a pinned
-  version, `12.2.0`, driven headlessly by Puppeteer `25.x`.
+  version, `12.2.0`, driven headlessly by Puppeteer `25.16.0`.
 - **Rationale**: It is the maintained reference renderer, supports every diagram
   type used by the docs (flowchart, sequence, state, class), renders offline once
   installed, supports PNG output with a scale flag, and is Node.js-only as a
@@ -25,8 +25,9 @@ the choice, the rationale, and the alternatives considered.
 
 ## 2. Node toolchain pinning and installation
 
-- **Decision**: Add `tools/diagram-export/package.json` with exact versions for
-  `@mermaid-js/mermaid-cli` and `puppeteer`, commit `package-lock.json`, and install
+- **Decision**: Add `tools/diagram-export/package.json` with exact versions
+  `@mermaid-js/mermaid-cli@12.2.0` and `puppeteer@25.16.0`, commit
+  `package-lock.json`, and install
   with `npm ci`. Invoke the local binary only (`npx --no-install mmdc` or the local
   `src/cli.js`) so the pinned version is always used.
 - **Rationale**: The constitution requires pinned, justified dependencies.
@@ -42,7 +43,10 @@ the choice, the rationale, and the alternatives considered.
   2. fenced code blocks in `*.md` files whose info string is `mermaid`
      (case-insensitive, optional whitespace).
   Normalize each definition (unify line endings, strip trailing whitespace, trim
-  leading/trailing blank lines) before hashing.
+  leading/trailing blank lines) before hashing. The current repository contains 10
+  standalone files and 12 inline blocks; the exporter must report the measured
+  discovered and unique counts rather than assuming that inline copies are
+  duplicates.
 - **Rationale**: The docs store each diagram twice (inline plus an optional
   standalone `.mmd`), and one diagram exists inline only. Scanning both kinds is
   required by FR-002 and US2.
@@ -57,7 +61,10 @@ the choice, the rationale, and the alternatives considered.
   the inline copy is recorded as skipped.
 - **Rationale**: Satisfies FR-004 and SC-007, avoids duplicate images, and keeps
   stable, meaningful file names. Canonical precedence is deterministic and matches
-  the docs index, which treats `.mmd` as the standalone source of truth.
+  the   docs index, which treats `.mmd` as the standalone source of truth. Current
+  repository inspection shows the 10 standalone files and 12 inline blocks have
+  distinct normalized hashes, so the current output count must be discovered at
+  runtime rather than hard-coded as 11.
 - **Alternatives considered**: First-seen wins (order-dependent and surprising);
   render everything and deduplicate files afterward (wasteful and ambiguous naming).
 
@@ -79,11 +86,12 @@ the choice, the rationale, and the alternatives considered.
 
 ## 6. Atomic, idempotent publishing and orphan cleanup
 
-- **Decision**: Render every diagram into a temporary staging directory first. Only
-  if all renders succeed, publish the staged PNGs into `neuro-gate/diagrams/`,
-  remove PNGs listed in the previous `manifest.json` that are no longer expected,
-  and write the new manifest. If any render fails, leave the existing output
-  directory untouched and exit non-zero.
+- **Decision**: Render every diagram into a temporary staging directory first and
+  validate PNG signatures, non-zero sizes, dimensions, and the staged manifest.
+  Rename the existing managed output directory to a backup, rename staging into
+  place, and remove the backup only after the replacement succeeds. If any render
+  fails, roll back and leave the existing output directory untouched. Orphan
+  cleanup is limited to files owned by the previous valid manifest.
 - **Rationale**: Satisfies FR-007, FR-008, FR-009, FR-010 and the refresh/failure
   edge cases. Staging guarantees that a broken diagram cannot corrupt or partially
   overwrite a valid image set.
@@ -123,8 +131,8 @@ the choice, the rationale, and the alternatives considered.
     `contracts/report.schema.json`, the manifest matches
     `contracts/manifest.schema.json`, and documented exit codes are returned.
   - An opt-in integration test (`-m render`) that renders a tiny fixture diagram
-    with the real `mmdc`, asserting a valid PNG signature, 2x dimensions, and a
-    successful manifest.
+    with the real `mmdc` at scale 1 and scale 2, asserting a valid PNG signature
+    and a 2x width/height ratio within documented renderer rounding tolerance.
 - **Rationale**: Meets Constitution IV, keeps the default suite fast and
   deterministic (no browser), and still proves the real rendering path.
 - **Alternatives considered**: Browser rendering in every test (slow, flaky in CI);
@@ -133,8 +141,10 @@ the choice, the rationale, and the alternatives considered.
 ## 10. Performance
 
 - **Decision**: Render sequentially with a 30 s per-diagram timeout and an overall
-  budget check. Sequential rendering of the current 11 diagrams stays well under
-  the 2-minute SC-003 budget; parallel rendering is unnecessary complexity.
+  budget check. The benchmark records the discovery-derived count, platform,
+  renderer versions, and elapsed time; it fails above two minutes or when the
+  result regresses by more than 20% from the recorded baseline. Parallel rendering
+  is unnecessary complexity for the current tens-of-diagrams scope.
 - **Rationale**: Simplicity, predictable memory use, and clear per-diagram error
   attribution. Revisit only if the diagram count grows by an order of magnitude.
 - **Alternatives considered**: Parallel rendering via `p-limit` (faster but adds
