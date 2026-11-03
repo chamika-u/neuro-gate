@@ -1,0 +1,9 @@
+{
+  "name": "neuro-gate-diagram-export",
+  "private": true,
+  "engines": { "node": ">=22.13.0" },
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "12.2.0",
+    "puppeteer": "25.16.0"
+  }
+}
