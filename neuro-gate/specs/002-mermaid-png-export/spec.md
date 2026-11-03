@@ -182,10 +182,11 @@ error and confirm the failure is reported and no valid PNG is corrupted.
 - **SC-005**: When any diagram fails to render, the failure names the source and
   the number of corrupted output files is zero.
 - **SC-006**: 100% of diagrams containing non-ASCII labels render those labels
-  legibly in the produced images.
+  without replacement characters or missing-glyph boxes in the produced images.
 - **SC-007**: Identical diagrams produce exactly one image (zero duplicates).
-- **SC-008**: Every produced PNG is rendered at a minimum of 2x scale relative to
-  the diagram's native size, keeping labels legible on high-DPI displays.
+- **SC-008**: For a fixed fixture rendered at scale 1 and scale 2, the scale-2
+  PNG has twice the width and height within renderer pixel-rounding tolerance;
+  every production PNG uses scale 2 or greater.
 
 ## Assumptions
 
@@ -194,9 +195,10 @@ error and confirm the failure is reported and no valid PNG is corrupted.
 - The requested output directory is `neuro-gate/diagrams/` at the project root.
   The pre-existing `neuro-gate/docs/diagrams/` holds canonical `.mmd` sources and
   remains the source location; the new directory holds rendered PNGs only.
-- "All current diagrams" means every unique Mermaid diagram currently present:
-  the ten standalone `.mmd` sources plus the inline-only failure-handling diagram
-  in the safety document, with duplicate inline copies collapsed to one image.
+- "All current diagrams" means every Mermaid definition currently present under
+  `neuro-gate/docs/`, with normalized identical content collapsed to one image.
+  The exporter reports the discovered and unique counts from the current source
+  tree rather than relying on a fixed inventory.
 - PNG is the only required output format; no SVG, PDF, or other formats are in
   scope.
 - PNGs are rendered at a minimum of 2x scale relative to the diagram's native
