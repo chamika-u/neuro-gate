@@ -21,7 +21,8 @@ def output_names(sources: list[DiagramSource]) -> dict[str, str]:
         if not source.canonical:
             continue
         if source.origin == "standalone":
-            base = slug(Path(source.path).stem)
+            stem = Path(source.path).stem.lower()
+            base = re.sub(r"[^a-z0-9-]+", "-", stem).strip("-")
         else:
             prefix = Path(source.path).stem.split("-", 1)[0]
             base = f"{slug(prefix)}-{slug(source.document_heading or 'diagram')}"
