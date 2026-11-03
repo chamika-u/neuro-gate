@@ -39,7 +39,7 @@ Mermaid Diagram Export
 docs:    neuro-gate/docs
 out:     neuro-gate/diagrams
 scale:   2x
-discovered: 12  unique: 11  exported: 11  skipped: 1  failed: 0
+discovered: <measured>  unique: <measured>  exported: <measured>  skipped: <measured>  failed: 0
 
 RENDERED  01-system-context.png        <- docs/diagrams/01-system-context.mmd
 ...
@@ -48,7 +48,7 @@ SKIPPED   06-sequence-happy-path.mmd   (duplicate of docs/diagrams/06-sequence-h
 FAILED    05-failure-handling.png      <- docs/05-safety-and-ethics.md (2. Failure handling)
           reason: <actionable message>
 
-Result: SUCCESS (11 exported, 1 skipped, 0 failed)
+Result: SUCCESS (<exported> exported, <skipped> skipped, 0 failed)
 ```
 
 - The summary line always uses this label order: `discovered`, `unique`,
@@ -79,9 +79,9 @@ written to stdout with no other stdout content. Diagnostics still go to stderr.
 
 ## Side effects
 
-- On success, writes `*.png` files and `manifest.json` under `--out-dir`, and
-  removes generated PNGs listed in the previous manifest that are no longer
-  expected.
+- On success, validates all staged PNGs and the new manifest, then swaps the
+  staged managed output directory into place. It removes only generated PNGs
+  owned by the previous valid manifest that are no longer expected.
 - On failure, does not modify the existing output directory.
 - Never modifies files under `--docs-dir`.
 - `--check` never writes to disk.
@@ -92,6 +92,8 @@ written to stdout with no other stdout content. Diagnostics still go to stderr.
   a manifest differing only in `generated_at`.
 - **Deterministic naming**: given the same docs tree, output names are stable
   across runs and machines.
-- **Atomic publish**: a failed render cannot leave a partially updated image set.
+- **Atomic publish**: a failed render cannot leave a partially updated image set;
+  replacement uses a directory swap with rollback rather than individual file
+  copies.
 - **Committed output**: generated PNGs and `manifest.json` are intended to be
   committed to version control (FR-016).

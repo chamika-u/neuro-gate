@@ -39,12 +39,13 @@ python neuro-gate/tools/diagram-export/export_diagrams.py
 
 Expected result:
 
-- `neuro-gate/diagrams/` contains one PNG per unique diagram (currently 11:
-  ten standalone sources plus the inline-only failure-handling diagram).
+- `neuro-gate/diagrams/` contains one PNG per unique normalized diagram. The
+  discovered and unique counts are reported from the current docs tree; they are
+  not assumed from a fixed inventory.
 - `neuro-gate/diagrams/manifest.json` lists every published PNG with its source,
   content hash, dimensions, and size.
-- stdout ends with a `Result: SUCCESS (...)` line and the counts
-  `discovered: 12  unique: 11  exported: 11  skipped: 1  failed: 0`.
+- stdout ends with a `Result: SUCCESS (...)` line and discovery-derived counts
+  for `discovered`, `unique`, `exported`, `skipped`, and `failed`.
 - Exit code is `0`.
 
 Machine-readable variant:
@@ -62,15 +63,15 @@ Map each scenario to the specification's acceptance criteria.
 
 | # | Scenario | Command | Expected outcome |
 |---|----------|---------|------------------|
-| V1 | Fresh export creates the directory and all images (US1) | Delete `neuro-gate/diagrams/`, then run the export | Directory is recreated; 11 valid PNGs plus `manifest.json`; exit `0`. |
+| V1 | Fresh export creates the directory and all images (US1) | Delete `neuro-gate/diagrams/`, then run the export | Directory is recreated; the number of valid PNGs equals `total_unique` in the report; exit `0`. |
 | V2 | Standalone names are traceable (US1/FR-005) | Inspect `manifest.json` entries | Each `output_name` maps to a `source_path`; standalone names match the `.mmd` stems. |
-| V3 | Inline-only diagram included (US2) | Look for `05-failure-handling.png` | The inline failure-handling flowchart is rendered once. |
-| V4 | Duplicate collapsed (US2/FR-004) | Count files and compare `skipped` | 12 definitions, 11 images, `skipped: 1`; cancel/failure sequence appears once. |
+| V3 | Inline-only diagram included (US2) | Inspect manifest origins and source paths | Every inline-only definition has one published PNG and a traceable source path. |
+| V4 | Duplicate collapsed (US2/FR-004) | Count files and compare `skipped` | `skipped` equals duplicate definitions reported by discovery; identical content appears once. |
 | V5 | Idempotent rerun (US3) | Run the export twice, compare manifests | Same PNG set; manifests differ only in `generated_at`. |
 | V6 | Refresh after edit (US3/SC-004) | Change a word in one `.mmd`, rerun | Only that PNG changes; no orphaned files; exit `0`. |
 | V7 | Failure leaves output intact (US3/FR-010) | Introduce invalid Mermaid syntax, rerun | Exit `1`; failing source named; existing PNGs unchanged. |
 | V8 | Check mode never writes (FR-015) | Run with `--check` | No file timestamps change; exit `0` when current, `1` when stale. |
-| V9 | 2x scale (FR-017/SC-008) | Inspect `width_px`/`height_px` in the manifest | Dimensions are at least twice the native diagram size. |
+| V9 | 2x scale (FR-017/SC-008) | Run the scale comparison integration test | Scale-2 output is twice the scale-1 width and height within renderer rounding tolerance. |
 | V10 | Non-ASCII labels (FR-011/SC-006) | Render a fixture with an em dash and a Sinhala/Tamil label | Characters are legible, not replacement glyphs. |
 | V11 | Missing renderer is a config error (edge case) | Temporarily hide `node_modules`, run | Exit `2` with an actionable message; no partial PNGs. |
 
@@ -91,9 +92,11 @@ discovery, naming, and manifest-validation modules.
 
 ## Performance check
 
-The full export of the current diagram set must finish in under two minutes
-(SC-003). Record the wall-clock time of a full run during validation; a failure to
-meet the budget is a release blocker.
+The full export of the current discovery-derived diagram set must finish in under
+two minutes (SC-003). Record the wall-clock time, diagram count, OS, Python/Node
+versions, and renderer versions in the benchmark artifact. Treat a result above
+two minutes or more than 20% slower than the approved baseline as a release
+blocker.
 
 ## Troubleshooting
 
