@@ -1,0 +1,15 @@
+%% NeuroGate — Sequence: user interaction flow
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant H as HMI
+    participant S as Sensor
+    participant A as AI Engine
+    participant D as Display
+
+    U->>H: initiates action
+    H->>S: reads sensor data
+    S->>A: sends data payload
+    A->>A: processes & predicts
+    A->>D: renders result
+    D-->>U: shows output

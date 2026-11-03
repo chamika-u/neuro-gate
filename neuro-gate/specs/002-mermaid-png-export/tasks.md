@@ -82,7 +82,8 @@ standalone `.mmd` source is represented by a traceable PNG.
 - [ ] T023 [US1] Implement deterministic naming helpers in `neuro-gate/tools/diagram-export/diagram_export/naming.py`
 - [ ] T024 [P] [US1] Write failing tests for the `mmdc` subprocess wrapper, timeout, and staging cleanup in `neuro-gate/tools/diagram-export/tests/unit/test_render.py`
 - [ ] T025 [US1] Implement the renderer wrapper, per-diagram timeout, and temporary staging in `neuro-gate/tools/diagram-export/diagram_export/render.py`
-- [ ] T026 [US1] Wire the standalone discovery → naming → render → publish flow in `neuro-gate/tools/diagram-export/diagram_export/cli.py`
+- [ ] T026A [P] [US1] Write failing tests for the standalone discovery → naming → render → publish flow in `neuro-gate/tools/diagram-export/tests/contract/test_cli_flow.py`
+- [ ] T026 [US1] Wire the standalone discovery → naming → render → publish flow in `neuro-gate/tools/diagram-export/diagram_export/cli.py` after T026A fails
 - [ ] T027 [P] [US1] Write contract tests for human CLI output, `--json` output, and exit codes in `neuro-gate/tools/diagram-export/tests/contract/test_cli_output.py`
 - [ ] T028 [US1] Write the opt-in real-render integration test marked `render` in `neuro-gate/tools/diagram-export/tests/integration/test_render_real.py`
 - [ ] T029 [US1] Validate US1 by running the export and confirming ten standalone PNGs plus a valid manifest appear in `neuro-gate/diagrams/`
